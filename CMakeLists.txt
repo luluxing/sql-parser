@@ -60,14 +60,31 @@ target_include_directories(sqlparser PUBLIC ${SRC_DIR})
 target_compile_options(sqlparser PRIVATE -Wall -Werror)
 
 # Suppress warnings for generated parser files
+# These warnings are common in auto-generated code and can be safely suppressed
 set_source_files_properties(
     ${PARSER_DIR}/flex_lexer.cpp
     PROPERTIES COMPILE_FLAGS "-Wno-sign-compare -Wno-unneeded-internal-declaration -Wno-register"
 )
-set_source_files_properties(
-    ${PARSER_DIR}/bison_parser.cpp
-    PROPERTIES COMPILE_FLAGS "-Wno-free-nonheap-object"
-)
+
+# For bison_parser.cpp, suppress warnings that are common in generated parser code
+# These warnings don't indicate actual problems in the generated code
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    set_source_files_properties(
+        ${PARSER_DIR}/bison_parser.cpp
+        PROPERTIES COMPILE_FLAGS "-Wno-free-nonheap-object -Wno-unused-but-set-variable"
+    )
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+    set_source_files_properties(
+        ${PARSER_DIR}/bison_parser.cpp
+        PROPERTIES COMPILE_FLAGS "-Wno-free-nonheap-object"
+    )
+else()
+    # For other compilers, use minimal suppression
+    set_source_files_properties(
+        ${PARSER_DIR}/bison_parser.cpp
+        PROPERTIES COMPILE_FLAGS "-Wno-free-nonheap-object"
+    )
+endif()
 
 # === Install Rules ===
 install(TARGETS sqlparser
